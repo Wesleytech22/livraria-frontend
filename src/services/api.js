@@ -1,124 +1,152 @@
-import axios from 'axios';
-import toast from 'react-hot-toast';
-
+// src/services/api.js - Serviço completo
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-const api = axios.create({
+// Configuração do axios
+const apiConfig = {
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 10000,
-});
+};
 
-// Interceptor para tratamento de erros
-api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    const message = error.response?.data?.message || 'Erro na conexão com o servidor';
-    
-    if (error.response?.status === 404) {
-      toast.error('Recurso não encontrado');
-    } else if (error.response?.status === 400) {
-      toast.error('Dados inválidos. Verifique os campos.');
-    } else if (error.response?.status === 500) {
-      toast.error('Erro interno do servidor');
-    } else if (error.code === 'ECONNABORTED') {
-      toast.error('Tempo de conexão esgotado');
-    } else {
-      toast.error(message);
+// Função para fazer requisições
+const fetchAPI = async (endpoint, options = {}) => {
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
-    return Promise.reject(error);
-  }
-);
 
-// Serviços para Livros
+    return await response.json();
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
+  }
+};
+
+// Serviços completos
 export const bookService = {
-  // Listar todos os livros
-  getAll: async (page = 1, limit = 10) => {
+  // Listar todos os livros com paginação
+  getAll: async (page = 1, limit = 12) => {
     try {
-      const response = await api.get(`/livros?pagina=${page}&limite=${limit}`);
-      return response.data;
+      const data = await fetchAPI(`/livros?pagina=${page}&limite=${limit}`);
+      return {
+        success: true,
+        books: data.dados || [],
+        pagination: data.paginacao || { total: 0, pagina: 1, totalPaginas: 1 },
+      };
     } catch (error) {
-      throw error;
+      return { success: false, books: [], pagination: null, error: error.message };
     }
   },
 
   // Buscar livro por ID
   getById: async (id) => {
     try {
-      const response = await api.get(`/livros/${id}`);
-      return response.data;
+      const data = await fetchAPI(`/livros/${id}`);
+      return { success: true, book: data.dados || data };
     } catch (error) {
-      throw error;
+      return { success: false, book: null, error: error.message };
     }
   },
 
   // Criar novo livro
   create: async (bookData) => {
     try {
-      const response = await api.post('/livros', bookData);
-      toast.success('Livro criado com sucesso!');
-      return response.data;
+      const data = await fetchAPI('/livros', {
+        method: 'POST',
+        body: JSON.stringify(bookData),
+      });
+      return { success: true, book: data.dados || data, message: data.mensagem };
     } catch (error) {
-      throw error;
+      return { success: false, book: null, error: error.message };
     }
   },
 
   // Atualizar livro
   update: async (id, bookData) => {
     try {
-      const response = await api.put(`/livros/${id}`, bookData);
-      toast.success('Livro atualizado com sucesso!');
-      return response.data;
+      const data = await fetchAPI(`/livros/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(bookData),
+      });
+      return { success: true, book: data.dados || data, message: data.mensagem };
     } catch (error) {
-      throw error;
+      return { success: false, book: null, error: error.message };
     }
   },
 
   // Deletar livro
   delete: async (id) => {
     try {
-      const response = await api.delete(`/livros/${id}`);
-      toast.success('Livro deletado com sucesso!');
-      return response.data;
+      const data = await fetchAPI(`/livros/${id}`, {
+        method: 'DELETE',
+      });
+      return { success: true, message: data.mensagem || 'Livro deletado com sucesso' };
     } catch (error) {
-      throw error;
+      return { success: false, error: error.message };
     }
   },
 
   // Buscar por termo
   search: async (term) => {
     try {
-      const response = await api.get(`/livros/busca/${term}`);
-      return response.data;
+      const data = await fetchAPI(`/livros/busca/${term}`);
+      return { success: true, books: data.dados || [] };
     } catch (error) {
-      throw error;
+      return { success: false, books: [], error: error.message };
     }
   },
 
-  // Health check
+  // Health check da API
   getStatus: async () => {
     try {
-      const response = await api.get('/status');
-      return response.data;
+      const data = await fetchAPI('/status');
+      return { success: true, status: data.status || 'online', uptime: data.uptime };
     } catch (error) {
-      throw error;
+      return { success: false, status: 'offline', error: error.message };
     }
   },
 
-  // Documentação
+  // Documentação da API
   getDocs: async () => {
     try {
-      const response = await api.get('/');
-      return response.data;
+      const data = await fetchAPI('/');
+      return { success: true, docs: data };
     } catch (error) {
-      throw error;
+      return { success: false, docs: null, error: error.message };
     }
-  }
+  },
 };
 
-export default api;
+// Notificações (simuladas)
+export const showNotification = (type, message) => {
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.innerHTML = `
+    <div style="
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      background: ${type === 'success' ? '#10b981' : '#ef4444'};
+      color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      animation: slideIn 0.3s ease-out;
+    ">
+      ${message}
+    </div>
+  `;
+  document.body.appendChild(notification);
+  setTimeout(() => notification.remove(), 3000);
+};

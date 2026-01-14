@@ -1,51 +1,57 @@
 import { useState, useEffect } from 'react';
-import { FaSearch, FaEdit, FaTrash, FaEye, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { 
+  FaSearch, FaEdit, FaTrash, FaEye, FaSort, 
+  FaSortUp, FaSortDown, FaPlus, FaFilter, 
+  FaFileExport, FaSync 
+} from 'react-icons/fa';
 import { bookService } from '../services/api';
+import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import BookModal from '../components/BookModal';
 
-export default function Books() {
+const Books = () => {
+  const navigate = useNavigate();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [sortField, setSortField] = useState('titulo');
   const [sortDirection, setSortDirection] = useState('asc');
   const [selectedBook, setSelectedBook] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalType, setModalType] = useState('view'); // 'view', 'edit', 'delete'
+  const [modalType, setModalType] = useState(null);
+  const [selectedBooks, setSelectedBooks] = useState([]);
 
   useEffect(() => {
     fetchBooks();
-  }, [currentPage, sortField, sortDirection]);
+  }, [page, sortField, sortDirection]);
 
   const fetchBooks = async () => {
     try {
       setLoading(true);
-      const data = await bookService.getAll(currentPage, 10);
+      const data = await bookService.getAll(page, 10, sortField, sortDirection);
       setBooks(data.dados || []);
       setTotalPages(data.paginacao?.totalPaginas || 1);
     } catch (error) {
-      console.error('Erro ao carregar livros:', error);
+      toast.error('Erro ao carregar livros');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!searchTerm.trim()) {
+  const handleSearch = async () => {
+    if (!search.trim()) {
       fetchBooks();
       return;
     }
     
     try {
       setLoading(true);
-      const data = await bookService.search(searchTerm);
+      const data = await bookService.search(search);
       setBooks(data.dados || []);
       setTotalPages(1);
     } catch (error) {
-      console.error('Erro na busca:', error);
+      toast.error('Erro na busca');
     } finally {
       setLoading(false);
     }
@@ -61,242 +67,265 @@ export default function Books() {
   };
 
   const handleDelete = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir este livro?')) return;
+    
     try {
       await bookService.delete(id);
+      toast.success('Livro excluído com sucesso!');
       fetchBooks();
-      setIsModalOpen(false);
     } catch (error) {
-      console.error('Erro ao deletar:', error);
+      toast.error('Erro ao excluir livro');
     }
   };
 
-  const openModal = (book, type) => {
-    setSelectedBook(book);
-    setModalType(type);
-    setIsModalOpen(true);
+  const handleBulkDelete = async () => {
+    if (selectedBooks.length === 0) {
+      toast.error('Selecione livros para excluir');
+      return;
+    }
+    
+    if (!window.confirm(`Excluir ${selectedBooks.length} livro(s)?`)) return;
+    
+    try {
+      for (const id of selectedBooks) {
+        await bookService.delete(id);
+      }
+      toast.success(`${selectedBooks.length} livro(s) excluído(s)!`);
+      setSelectedBooks([]);
+      fetchBooks();
+    } catch (error) {
+      toast.error('Erro ao excluir livros');
+    }
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedBook(null);
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedBooks(books.map(book => book._id));
+    } else {
+      setSelectedBooks([]);
+    }
   };
 
-  const renderSortIcon = (field) => {
+  const handleSelectBook = (id, checked) => {
+    if (checked) {
+      setSelectedBooks([...selectedBooks, id]);
+    } else {
+      setSelectedBooks(selectedBooks.filter(bookId => bookId !== id));
+    }
+  };
+
+  const getSortIcon = (field) => {
     if (sortField !== field) return <FaSort className="text-gray-400" />;
     return sortDirection === 'asc' ? 
-      <FaSortUp className="text-blue-600" /> : 
-      <FaSortDown className="text-blue-600" />;
+      <FaSortUp className="text-primary" /> : 
+      <FaSortDown className="text-primary" />;
   };
 
-  if (loading && books.length === 0) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando livros...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="books-page">
+      <div className="page-header">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">📚 Catálogo de Livros</h1>
-          <p className="text-gray-600 mt-2">
-            Gerencie todos os livros cadastrados no sistema
-          </p>
+          <h1>📚 Gerenciar Livros</h1>
+          <p>Gerencie todos os livros do seu catálogo</p>
         </div>
-        
-        <a 
-          href="/add-book"
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold"
-        >
-          + Adicionar Livro
-        </a>
+        <div className="header-actions">
+          <button 
+            className="btn btn-secondary"
+            onClick={() => navigate('/books/new')}
+          >
+            <FaPlus /> Novo Livro
+          </button>
+        </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white p-6 rounded-xl shadow-lg">
-        <form onSubmit={handleSearch} className="flex gap-4">
-          <div className="flex-1 relative">
-            <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+      {/* Search and Filters */}
+      <div className="card mb-6">
+        <div className="search-filters">
+          <div className="search-box">
+            <FaSearch />
             <input
               type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por título, autor ou editora..."
-              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Buscar por título, autor, editora..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             />
-          </div>
-          <button
-            type="submit"
-            className="bg-gray-800 text-white px-6 py-3 rounded-lg hover:bg-gray-900 transition font-semibold"
-          >
-            Buscar
-          </button>
-          {searchTerm && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchTerm('');
-                fetchBooks();
-              }}
-              className="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-300 transition font-semibold"
-            >
-              Limpar
+            <button onClick={handleSearch} className="btn btn-primary">
+              Buscar
             </button>
-          )}
-        </form>
+          </div>
+          
+          <div className="filters">
+            <button className="btn btn-outline">
+              <FaFilter /> Filtrar
+            </button>
+            <button className="btn btn-outline" onClick={fetchBooks}>
+              <FaSync /> Atualizar
+            </button>
+            {selectedBooks.length > 0 && (
+              <button className="btn btn-danger" onClick={handleBulkDelete}>
+                <FaTrash /> Excluir ({selectedBooks.length})
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Books Table */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th 
-                  className="py-4 px-6 text-left cursor-pointer"
-                  onClick={() => handleSort('titulo')}
-                >
-                  <div className="flex items-center gap-2">
-                    Título
-                    {renderSortIcon('titulo')}
+      <div className="card">
+        <div className="table-responsive">
+          {loading ? (
+            <div className="loading-table">
+              <div className="spinner"></div>
+              <p>Carregando livros...</p>
+            </div>
+          ) : books.length === 0 ? (
+            <div className="empty-state">
+              <FaBook size={48} />
+              <h3>Nenhum livro encontrado</h3>
+              <p>{search ? 'Tente uma busca diferente' : 'Comece adicionando seu primeiro livro!'}</p>
+              <button 
+                className="btn btn-primary mt-4"
+                onClick={() => navigate('/books/new')}
+              >
+                <FaPlus /> Adicionar Livro
+              </button>
+            </div>
+          ) : (
+            <>
+              <table className="books-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '50px' }}>
+                      <input
+                        type="checkbox"
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        checked={selectedBooks.length === books.length && books.length > 0}
+                      />
+                    </th>
+                    <th onClick={() => handleSort('titulo')}>
+                      <div className="sortable">
+                        Título {getSortIcon('titulo')}
+                      </div>
+                    </th>
+                    <th onClick={() => handleSort('autor')}>
+                      <div className="sortable">
+                        Autor {getSortIcon('autor')}
+                      </div>
+                    </th>
+                    <th onClick={() => handleSort('editora')}>
+                      <div className="sortable">
+                        Editora {getSortIcon('editora')}
+                      </div>
+                    </th>
+                    <th onClick={() => handleSort('preco')}>
+                      <div className="sortable">
+                        Preço {getSortIcon('preco')}
+                      </div>
+                    </th>
+                    <th>Páginas</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {books.map((book) => (
+                    <tr key={book._id} className="book-row">
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedBooks.includes(book._id)}
+                          onChange={(e) => handleSelectBook(book._id, e.target.checked)}
+                        />
+                      </td>
+                      <td>
+                        <div className="book-title">
+                          <strong>{book.titulo}</strong>
+                          {book.isbn && (
+                            <span className="isbn">ISBN: {book.isbn}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td>{book.autor || '—'}</td>
+                      <td>{book.editora || '—'}</td>
+                      <td>
+                        <span className="price">
+                          R$ {book.preco?.toFixed(2) || '0,00'}
+                        </span>
+                      </td>
+                      <td>{book.paginas || '—'}</td>
+                      <td>
+                        <div className="action-buttons">
+                          <button
+                            className="btn-icon"
+                            onClick={() => navigate(`/books/${book._id}`)}
+                            title="Visualizar"
+                          >
+                            <FaEye />
+                          </button>
+                          <button
+                            className="btn-icon"
+                            onClick={() => navigate(`/books/edit/${book._id}`)}
+                            title="Editar"
+                          >
+                            <FaEdit />
+                          </button>
+                          <button
+                            className="btn-icon danger"
+                            onClick={() => handleDelete(book._id)}
+                            title="Excluir"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="pagination">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="btn btn-outline"
+                  >
+                    Anterior
+                  </button>
+                  
+                  <div className="page-info">
+                    Página <strong>{page}</strong> de <strong>{totalPages}</strong>
                   </div>
-                </th>
-                <th 
-                  className="py-4 px-6 text-left cursor-pointer"
-                  onClick={() => handleSort('autor')}
-                >
-                  <div className="flex items-center gap-2">
-                    Autor
-                    {renderSortIcon('autor')}
-                  </div>
-                </th>
-                <th 
-                  className="py-4 px-6 text-left cursor-pointer"
-                  onClick={() => handleSort('editora')}
-                >
-                  <div className="flex items-center gap-2">
-                    Editora
-                    {renderSortIcon('editora')}
-                  </div>
-                </th>
-                <th 
-                  className="py-4 px-6 text-left cursor-pointer"
-                  onClick={() => handleSort('preco')}
-                >
-                  <div className="flex items-center gap-2">
-                    Preço
-                    {renderSortIcon('preco')}
-                  </div>
-                </th>
-                <th className="py-4 px-6 text-left">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {books.map((book) => (
-                <tr key={book._id} className="hover:bg-gray-50 transition">
-                  <td className="py-4 px-6">
-                    <div>
-                      <p className="font-semibold text-gray-800">{book.titulo}</p>
-                      <p className="text-sm text-gray-500">{book.paginas} páginas</p>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <p className="text-gray-700">{book.autor}</p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <p className="text-gray-700">{book.editora}</p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <p className="font-semibold text-blue-600">
-                      R$ {book.preco?.toFixed(2)}
-                    </p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => openModal(book, 'view')}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                        title="Ver detalhes"
-                      >
-                        <FaEye />
-                      </button>
-                      <button
-                        onClick={() => openModal(book, 'edit')}
-                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
-                        title="Editar"
-                      >
-                        <FaEdit />
-                      </button>
-                      <button
-                        onClick={() => openModal(book, 'delete')}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                        title="Excluir"
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="btn btn-outline"
+                  >
+                    Próxima
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
-
-        {/* Empty State */}
-        {books.length === 0 && !loading && (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">📭</div>
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              Nenhum livro encontrado
-            </h3>
-            <p className="text-gray-500">
-              {searchTerm ? 'Tente uma busca diferente' : 'Comece adicionando seu primeiro livro!'}
-            </p>
-          </div>
-        )}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-4">
-          <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-          >
-            Anterior
-          </button>
-          
-          <span className="text-gray-700">
-            Página <strong>{currentPage}</strong> de <strong>{totalPages}</strong>
-          </span>
-          
-          <button
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-          >
-            Próxima
-          </button>
-        </div>
-      )}
-
       {/* Modal */}
-      {isModalOpen && (
+      {modalType && selectedBook && (
         <BookModal
           book={selectedBook}
           type={modalType}
-          onClose={closeModal}
-          onDelete={handleDelete}
-          onUpdate={fetchBooks}
+          onClose={() => {
+            setModalType(null);
+            setSelectedBook(null);
+          }}
+          onSuccess={fetchBooks}
         />
       )}
     </div>
   );
-}
+};
+
+export default Books;

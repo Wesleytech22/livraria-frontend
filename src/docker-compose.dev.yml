@@ -1,0 +1,19 @@
+# docker-compose.dev.yml
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules  # Evita sobrescrever node_modules do container
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true  # Importante para hot-reload no Docker
+      - WATCHPACK_POLLING=true
+    stdin_open: true
+    tty: true

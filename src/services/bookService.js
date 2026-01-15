@@ -1,8 +1,5 @@
 import api from './api';
-<<<<<<< HEAD
-=======
 import { googleBooksService } from './googleBooks';
->>>>>>> feat/refacturer-frontend-livraria
 
 const bookService = {
   // GET /livros - Listar todos os livros
@@ -11,15 +8,10 @@ const bookService = {
       const response = await api.get('/livros', {
         params: { 
           pagina: page, 
-<<<<<<< HEAD
           limite: limit, 
           ordenar: sort, 
           direcao: direction 
-=======
-          limite: limit,
-          ordenar: sort,
-          direcao: direction
->>>>>>> feat/refacturer-frontend-livraria
+
         }
       });
       return response.data;
@@ -110,8 +102,6 @@ const bookService = {
       console.error('Erro ao verificar status da API:', error);
       throw error;
     }
-<<<<<<< HEAD
-=======
   },
 
   // Buscar livros da sua API e enriquecer com capas do Google Books
@@ -331,7 +321,6 @@ const bookService = {
       const text = encodeURIComponent((book.titulo?.substring(0, 20) || 'Livro').replace(/\s+/g, '+'));
       return `https://via.placeholder.com/150x200/6b7280/ffffff?text=${text}`;
     }
->>>>>>> feat/refacturer-frontend-livraria
   }
 };
 

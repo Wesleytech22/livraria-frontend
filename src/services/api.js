@@ -24,9 +24,7 @@ api.interceptors.request.use(
 
 // Interceptor para tratamento de erros
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
     let errorMessage = 'Erro desconhecido';
     

@@ -1,328 +1,203 @@
-import { useState, useEffect } from 'react';
-import { 
-  FaSearch, FaEdit, FaTrash, FaEye, FaSort, 
-  FaSortUp, FaSortDown, FaPlus, FaFilter, 
-  FaFileExport, FaSync 
-} from 'react-icons/fa';
-import { bookService } from '../services/api';
-import toast from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
-import BookModal from '../components/BookModal';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import BookCard from '../components/BookCard';
+import Pagination from '../components/Pagination';
+import SearchBar from '../components/SearchBar';
+import LoadingSpinner from '../components/LoadingSpinner';
+import Alert from '../components/Alert';
+import bookService from '../services/bookService';
 
 const Books = () => {
-  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [sortField, setSortField] = useState('titulo');
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [totalItems, setTotalItems] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [sortBy, setSortBy] = useState('titulo');
   const [sortDirection, setSortDirection] = useState('asc');
-  const [selectedBook, setSelectedBook] = useState(null);
-  const [modalType, setModalType] = useState(null);
-  const [selectedBooks, setSelectedBooks] = useState([]);
 
+  // Inicializar parâmetros da URL
+  useEffect(() => {
+    const page = parseInt(searchParams.get('pagina')) || 1;
+    const limit = parseInt(searchParams.get('limite')) || 12;
+    const sort = searchParams.get('ordenar') || 'titulo';
+    const direction = searchParams.get('direcao') || 'asc';
+    
+    setCurrentPage(page);
+    setItemsPerPage(limit);
+    setSortBy(sort);
+    setSortDirection(direction);
+  }, [searchParams]);
+
+  // Buscar livros
   useEffect(() => {
     fetchBooks();
-  }, [page, sortField, sortDirection]);
+  }, [currentPage, itemsPerPage, sortBy, sortDirection, searchTerm]);
 
   const fetchBooks = async () => {
     try {
       setLoading(true);
-      const data = await bookService.getAll(page, 10, sortField, sortDirection);
-      setBooks(data.dados || []);
-      setTotalPages(data.paginacao?.totalPaginas || 1);
-    } catch (error) {
+      setError(null);
+      
+      let response;
+      if (searchTerm) {
+        response = await bookService.searchBooks(searchTerm);
+        setBooks(response.dados || []);
+        setTotalItems(response.resultados || 0);
+      } else {
+        response = await bookService.getBooks(
+          currentPage, 
+          itemsPerPage, 
+          sortBy, 
+          sortDirection
+        );
+        setBooks(response.dados || []);
+        setTotalItems(response.paginacao?.total || 0);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar livros:', err);
+      setError('Não foi possível carregar os livros. Tente novamente.');
       toast.error('Erro ao carregar livros');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = async () => {
-    if (!search.trim()) {
-      fetchBooks();
+  const handleSearch = (params) => {
+    setSearchTerm(params.term || '');
+    if (!params.term) {
+      // Se busca limpa, volta para página 1
+      setCurrentPage(1);
+      updateUrlParams(1, itemsPerPage, sortBy, sortDirection);
+    }
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    updateUrlParams(page, itemsPerPage, sortBy, sortDirection);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleItemsPerPageChange = (limit) => {
+    setItemsPerPage(limit);
+    setCurrentPage(1); // Volta para primeira página ao mudar limite
+    updateUrlParams(1, limit, sortBy, sortDirection);
+  };
+
+  const handleFilterChange = (filters) => {
+    setSortBy(filters.sortBy);
+    setSortDirection(filters.sortDirection);
+    updateUrlParams(currentPage, itemsPerPage, filters.sortBy, filters.sortDirection);
+  };
+
+  const updateUrlParams = (page, limit, sort, direction) => {
+    const params = new URLSearchParams();
+    params.set('pagina', page);
+    params.set('limite', limit);
+    params.set('ordenar', sort);
+    params.set('direcao', direction);
+    setSearchParams(params);
+  };
+
+  const handleDeleteBook = async (bookId) => {
+    if (!window.confirm('Tem certeza que deseja excluir este livro?')) {
       return;
     }
-    
-    try {
-      setLoading(true);
-      const data = await bookService.search(search);
-      setBooks(data.dados || []);
-      setTotalPages(1);
-    } catch (error) {
-      toast.error('Erro na busca');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleSort = (field) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm('Tem certeza que deseja excluir este livro?')) return;
-    
     try {
-      await bookService.delete(id);
+      await bookService.deleteBook(bookId);
       toast.success('Livro excluído com sucesso!');
+      // Recarregar a lista
       fetchBooks();
-    } catch (error) {
+    } catch (err) {
+      console.error('Erro ao excluir livro:', err);
       toast.error('Erro ao excluir livro');
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedBooks.length === 0) {
-      toast.error('Selecione livros para excluir');
-      return;
-    }
-    
-    if (!window.confirm(`Excluir ${selectedBooks.length} livro(s)?`)) return;
-    
-    try {
-      for (const id of selectedBooks) {
-        await bookService.delete(id);
-      }
-      toast.success(`${selectedBooks.length} livro(s) excluído(s)!`);
-      setSelectedBooks([]);
-      fetchBooks();
-    } catch (error) {
-      toast.error('Erro ao excluir livros');
-    }
-  };
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-  const handleSelectAll = (checked) => {
-    if (checked) {
-      setSelectedBooks(books.map(book => book._id));
-    } else {
-      setSelectedBooks([]);
-    }
-  };
-
-  const handleSelectBook = (id, checked) => {
-    if (checked) {
-      setSelectedBooks([...selectedBooks, id]);
-    } else {
-      setSelectedBooks(selectedBooks.filter(bookId => bookId !== id));
-    }
-  };
-
-  const getSortIcon = (field) => {
-    if (sortField !== field) return <FaSort className="text-gray-400" />;
-    return sortDirection === 'asc' ? 
-      <FaSortUp className="text-primary" /> : 
-      <FaSortDown className="text-primary" />;
-  };
+  if (loading && books.length === 0) {
+    return <LoadingSpinner text="Carregando livros..." />;
+  }
 
   return (
-    <div className="books-page">
-      <div className="page-header">
-        <div>
-          <h1>📚 Gerenciar Livros</h1>
-          <p>Gerencie todos os livros do seu catálogo</p>
-        </div>
-        <div className="header-actions">
-          <button 
-            className="btn btn-secondary"
-            onClick={() => navigate('/books/new')}
-          >
-            <FaPlus /> Novo Livro
-          </button>
-        </div>
+    <div className="space-y-8">
+      {/* Cabeçalho */}
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Catálogo de Livros</h1>
+        <p className="text-gray-600">
+          {searchTerm 
+            ? `Resultados da busca por "${searchTerm}"` 
+            : 'Explore todos os livros disponíveis no acervo'}
+        </p>
       </div>
 
-      {/* Search and Filters */}
-      <div className="card mb-6">
-        <div className="search-filters">
-          <div className="search-box">
-            <FaSearch />
-            <input
-              type="text"
-              placeholder="Buscar por título, autor, editora..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+      {/* Barra de busca */}
+      <SearchBar
+        onSearch={handleSearch}
+        placeholder={searchTerm || "Buscar por título, autor, editora ou ISBN..."}
+        showFilters={!searchTerm}
+        onFilterChange={handleFilterChange}
+      />
+
+      {/* Mensagem de erro */}
+      {error && (
+        <Alert type="error" title="Erro" message={error} />
+      )}
+
+      {/* Resultados */}
+      {books.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-gray-400 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">
+            {searchTerm ? 'Nenhum livro encontrado' : 'Nenhum livro cadastrado'}
+          </h3>
+          <p className="text-gray-500 mb-6">
+            {searchTerm 
+              ? 'Tente buscar por outro termo ou adicione um novo livro.'
+              : 'Seja o primeiro a adicionar um livro ao acervo!'}
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Grid de livros */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {books.map((book) => (
+              <BookCard
+                key={book._id}
+                book={book}
+                onDelete={handleDeleteBook}
+              />
+            ))}
+          </div>
+
+          {/* Paginação (apenas se não estiver pesquisando) */}
+          {!searchTerm && totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={handleItemsPerPageChange}
+              totalItems={totalItems}
             />
-            <button onClick={handleSearch} className="btn btn-primary">
-              Buscar
-            </button>
-          </div>
-          
-          <div className="filters">
-            <button className="btn btn-outline">
-              <FaFilter /> Filtrar
-            </button>
-            <button className="btn btn-outline" onClick={fetchBooks}>
-              <FaSync /> Atualizar
-            </button>
-            {selectedBooks.length > 0 && (
-              <button className="btn btn-danger" onClick={handleBulkDelete}>
-                <FaTrash /> Excluir ({selectedBooks.length})
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Books Table */}
-      <div className="card">
-        <div className="table-responsive">
-          {loading ? (
-            <div className="loading-table">
-              <div className="spinner"></div>
-              <p>Carregando livros...</p>
-            </div>
-          ) : books.length === 0 ? (
-            <div className="empty-state">
-              <FaBook size={48} />
-              <h3>Nenhum livro encontrado</h3>
-              <p>{search ? 'Tente uma busca diferente' : 'Comece adicionando seu primeiro livro!'}</p>
-              <button 
-                className="btn btn-primary mt-4"
-                onClick={() => navigate('/books/new')}
-              >
-                <FaPlus /> Adicionar Livro
-              </button>
-            </div>
-          ) : (
-            <>
-              <table className="books-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: '50px' }}>
-                      <input
-                        type="checkbox"
-                        onChange={(e) => handleSelectAll(e.target.checked)}
-                        checked={selectedBooks.length === books.length && books.length > 0}
-                      />
-                    </th>
-                    <th onClick={() => handleSort('titulo')}>
-                      <div className="sortable">
-                        Título {getSortIcon('titulo')}
-                      </div>
-                    </th>
-                    <th onClick={() => handleSort('autor')}>
-                      <div className="sortable">
-                        Autor {getSortIcon('autor')}
-                      </div>
-                    </th>
-                    <th onClick={() => handleSort('editora')}>
-                      <div className="sortable">
-                        Editora {getSortIcon('editora')}
-                      </div>
-                    </th>
-                    <th onClick={() => handleSort('preco')}>
-                      <div className="sortable">
-                        Preço {getSortIcon('preco')}
-                      </div>
-                    </th>
-                    <th>Páginas</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {books.map((book) => (
-                    <tr key={book._id} className="book-row">
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={selectedBooks.includes(book._id)}
-                          onChange={(e) => handleSelectBook(book._id, e.target.checked)}
-                        />
-                      </td>
-                      <td>
-                        <div className="book-title">
-                          <strong>{book.titulo}</strong>
-                          {book.isbn && (
-                            <span className="isbn">ISBN: {book.isbn}</span>
-                          )}
-                        </div>
-                      </td>
-                      <td>{book.autor || '—'}</td>
-                      <td>{book.editora || '—'}</td>
-                      <td>
-                        <span className="price">
-                          R$ {book.preco?.toFixed(2) || '0,00'}
-                        </span>
-                      </td>
-                      <td>{book.paginas || '—'}</td>
-                      <td>
-                        <div className="action-buttons">
-                          <button
-                            className="btn-icon"
-                            onClick={() => navigate(`/books/${book._id}`)}
-                            title="Visualizar"
-                          >
-                            <FaEye />
-                          </button>
-                          <button
-                            className="btn-icon"
-                            onClick={() => navigate(`/books/edit/${book._id}`)}
-                            title="Editar"
-                          >
-                            <FaEdit />
-                          </button>
-                          <button
-                            className="btn-icon danger"
-                            onClick={() => handleDelete(book._id)}
-                            title="Excluir"
-                          >
-                            <FaTrash />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="pagination">
-                  <button
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="btn btn-outline"
-                  >
-                    Anterior
-                  </button>
-                  
-                  <div className="page-info">
-                    Página <strong>{page}</strong> de <strong>{totalPages}</strong>
-                  </div>
-                  
-                  <button
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                    className="btn btn-outline"
-                  >
-                    Próxima
-                  </button>
-                </div>
-              )}
-            </>
           )}
-        </div>
-      </div>
 
-      {/* Modal */}
-      {modalType && selectedBook && (
-        <BookModal
-          book={selectedBook}
-          type={modalType}
-          onClose={() => {
-            setModalType(null);
-            setSelectedBook(null);
-          }}
-          onSuccess={fetchBooks}
-        />
+          {/* Estatísticas */}
+          <div className="text-center text-sm text-gray-500">
+            Mostrando {books.length} {books.length === 1 ? 'livro' : 'livros'} 
+            {!searchTerm && ` de ${totalItems} no total`}
+          </div>
+        </>
       )}
     </div>
   );

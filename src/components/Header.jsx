@@ -1,156 +1,94 @@
-// src/components/Header.jsx
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaBook, FaPlus, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import { BookOpen, Home, Plus, Search, Library, Activity } from 'lucide-react';
+import bookService from '../services/bookService';
 
 const Header = () => {
   const location = useLocation();
+  const [apiStatus, setApiStatus] = useState('loading');
   
-  const isActive = (path) => {
-    return location.pathname === path ? 'active' : '';
+  useEffect(() => {
+    checkApiStatus();
+  }, []);
+
+  const checkApiStatus = async () => {
+    try {
+      await bookService.getStatus();
+      setApiStatus('online');
+    } catch (error) {
+      setApiStatus('offline');
+    }
   };
 
+  const navItems = [
+    { path: '/', label: 'Início', icon: <Home size={18} /> },
+    { path: '/livros', label: 'Livros', icon: <BookOpen size={18} /> },
+    { path: '/adicionar', label: 'Adicionar', icon: <Plus size={18} /> },
+    { path: '/buscar', label: 'Buscar', icon: <Search size={18} /> },
+  ];
+  
   return (
-    <header style={styles.header}>
-      <div className="container" style={styles.container}>
-        {/* Logo */}
-        <div style={styles.logoContainer}>
-          <div style={styles.logo}>📚</div>
-          <div>
-            <h1 style={styles.title}>Livraria API</h1>
-            <p style={styles.subtitle}>Gerenciamento completo de livros</p>
+    <header className="sticky top-0 z-50 bg-white shadow-sm border-b">
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 group">
+            <div className="p-2 bg-primary-100 rounded-lg group-hover:bg-primary-200 transition-colors">
+              <Library className="text-primary-600" size={24} />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">Livraria API</h1>
+              <p className="text-xs text-gray-500">Gerenciamento de Livros</p>
+            </div>
+          </Link>
+          
+          {/* Navigation */}
+          <nav className="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${
+                    isActive
+                      ? 'bg-white text-primary-600 font-semibold shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {item.icon}
+                  <span className="hidden sm:inline">{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+          
+          {/* API Status */}
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${
+              apiStatus === 'online' 
+                ? 'bg-green-50 text-green-700' 
+                : apiStatus === 'offline'
+                ? 'bg-red-50 text-red-700'
+                : 'bg-yellow-50 text-yellow-700'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                apiStatus === 'online' 
+                  ? 'bg-green-500 animate-pulse-slow' 
+                  : apiStatus === 'offline'
+                  ? 'bg-red-500'
+                  : 'bg-yellow-500 animate-pulse'
+              }`}></div>
+              <span className="text-sm font-medium capitalize">
+                {apiStatus === 'loading' ? 'Conectando...' : `API ${apiStatus}`}
+              </span>
+              <Activity size={12} />
+            </div>
           </div>
         </div>
-
-        {/* Navigation */}
-        <nav style={styles.nav}>
-          <Link 
-            to="/" 
-            style={{...styles.navLink, ...(isActive('/') && styles.activeLink)}}
-          >
-            <FaHome style={styles.icon} />
-            <span>Início</span>
-          </Link>
-          
-          <Link 
-            to="/books" 
-            style={{...styles.navLink, ...(isActive('/books') && styles.activeLink)}}
-          >
-            <FaBook style={styles.icon} />
-            <span>Livros</span>
-          </Link>
-          
-          <Link 
-            to="/add-book" 
-            style={{...styles.navLink, ...(isActive('/add-book') && styles.activeLink)}}
-          >
-            <FaPlus style={styles.icon} />
-            <span>Adicionar</span>
-          </Link>
-          
-          <div style={styles.userSection}>
-            <button style={styles.userBtn}>
-              <FaCog style={styles.icon} />
-            </button>
-            <button style={styles.logoutBtn}>
-              <FaSignOutAlt style={styles.icon} />
-            </button>
-          </div>
-        </nav>
       </div>
     </header>
   );
-};
-
-const styles = {
-  header: {
-    backgroundColor: 'white',
-    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-    padding: '15px 0',
-    position: 'sticky',
-    top: 0,
-    zIndex: 100,
-  },
-  container: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  logoContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '15px',
-  },
-  logo: {
-    fontSize: '2.5rem',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    width: '50px',
-    height: '50px',
-    borderRadius: '12px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: 'white',
-  },
-  title: {
-    fontSize: '1.5rem',
-    fontWeight: '700',
-    color: '#212529',
-    margin: 0,
-  },
-  subtitle: {
-    fontSize: '0.875rem',
-    color: '#6c757d',
-    margin: 0,
-  },
-  nav: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '30px',
-  },
-  navLink: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    textDecoration: 'none',
-    color: '#6c757d',
-    fontWeight: '500',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    transition: 'all 0.2s ease',
-  },
-  activeLink: {
-    backgroundColor: '#4361ee',
-    color: 'white',
-  },
-  icon: {
-    fontSize: '1.1rem',
-  },
-  userSection: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    marginLeft: '20px',
-    paddingLeft: '20px',
-    borderLeft: '1px solid #e9ecef',
-  },
-  userBtn: {
-    background: 'none',
-    border: 'none',
-    color: '#6c757d',
-    cursor: 'pointer',
-    padding: '8px',
-    borderRadius: '8px',
-    transition: 'all 0.2s ease',
-  },
-  logoutBtn: {
-    background: '#f8f9fa',
-    border: '1px solid #dee2e6',
-    color: '#6c757d',
-    cursor: 'pointer',
-    padding: '8px',
-    borderRadius: '8px',
-    transition: 'all 0.2s ease',
-  },
 };
 
 export default Header;

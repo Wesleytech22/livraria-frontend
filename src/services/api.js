@@ -11,22 +11,9 @@ const api = axios.create({
   timeout: 15000, // 15 segundos
 });
 
-// Interceptor para adicionar loading
-api.interceptors.request.use(
-  (config) => {
-    // Mostrar loading global se necessário
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
 // Interceptor para tratamento de erros
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
     let errorMessage = 'Erro desconhecido';
     

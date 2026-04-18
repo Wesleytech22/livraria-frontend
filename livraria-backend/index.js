@@ -7,9 +7,15 @@ const bookRoutes = require('./routes/bookRoutes');
 
 const app = express();
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// Middleware - CORREÇÃO IMPORTANTE
+app.use(cors({
+    origin: '*', // Permite todas as origens (para produção, especifique a URL do frontend)
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use(express.json()); // Para parsing do JSON
+app.use(express.urlencoded({ extended: true }));
 
 // Conexão MongoDB
 const mongoURI = `mongodb+srv://${process.env.MONGODB_USER}:${process.env.MONGODB_PASSWORD}@${process.env.MONGODB_CLUSTER}/?appName=Livraria`;
@@ -22,7 +28,24 @@ mongoose.connect(mongoURI)
 app.use('/livros', bookRoutes);
 
 app.get('/', (req, res) => {
-    res.json({ mensagem: 'API de Livraria funcionando!' });
+    res.json({
+        mensagem: 'API de Livraria funcionando!',
+        endpoints: {
+            livros: 'GET /livros',
+            livro: 'GET /livros/:id',
+            criar: 'POST /livros',
+            atualizar: 'PUT /livros/:id',
+            deletar: 'DELETE /livros/:id'
+        }
+    });
+});
+
+app.get('/status', (req, res) => {
+    res.json({
+        status: 'online',
+        mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        timestamp: new Date()
+    });
 });
 
 const PORT = process.env.PORT || 3000;

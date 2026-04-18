@@ -3,19 +3,38 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sync": "node syncDatabase.js",
+    "backup": "node backupToJson.js",
+    "seed": "node seedDatabase.js",
+    "backup:all": "node backupAll.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "api",
+    "livraria",
+    "books",
+    "mongodb"
+  ],
+  "author": "Wesley Rodrigues",
+  "license": "MIT",
+  "description": "API para gerenciamento de livros com MongoDB e JSON backup",
   "dependencies": {
     "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "mongoose": "^9.4.1"
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.4.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.4"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Wesleytech22/livraria-backend"
   }
 }

@@ -1,0 +1,50 @@
+[
+  {
+    "titulo": "Dom Casmurro",
+    "autor": "Machado de Assis",
+    "ano": 1899,
+    "preco": 49.9
+  },
+  {
+    "titulo": "teste01",
+    "autor": "Paul T. Scheuring",
+    "ano": 2026,
+    "preco": 0
+  },
+  {
+    "titulo": "fdhahfsdahh",
+    "autor": "fsdhahj",
+    "ano": 2026,
+    "preco": 0
+  },
+  {
+    "titulo": "s\\gs\\g",
+    "autor": "\\ghsdgsa",
+    "ano": 2026,
+    "preco": 0
+  },
+  {
+    "titulo": "fdhdh",
+    "autor": "fdheatrh",
+    "ano": 2026,
+    "preco": 0
+  },
+  {
+    "titulo": "Giovanna",
+    "autor": "Autor Teste",
+    "ano": 2024,
+    "preco": 0
+  },
+  {
+    "titulo": "rfshaehr",
+    "autor": "erfaha",
+    "ano": 2026,
+    "preco": 0
+  },
+  {
+    "titulo": "Teste MongoDB",
+    "autor": "Teste",
+    "ano": 2024,
+    "preco": 0
+  }
+]

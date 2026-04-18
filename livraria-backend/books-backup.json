@@ -1,0 +1,82 @@
+[
+  {
+    "_id": "69e3d151e6be8e1c1997bc7e",
+    "titulo": "Dom Casmurro",
+    "autor": "Machado de Assis",
+    "ano": 1899,
+    "preco": 49.9,
+    "createdAt": "2026-04-18T18:45:37.133Z",
+    "__v": 0,
+    "updatedAt": "2026-04-18T21:23:47.005Z"
+  },
+  {
+    "_id": "69e3d6aae6be8e1c1997bc80",
+    "titulo": "teste01",
+    "autor": "Paul T. Scheuring",
+    "ano": 2026,
+    "preco": 0,
+    "createdAt": "2026-04-18T19:08:26.799Z",
+    "__v": 0,
+    "updatedAt": "2026-04-18T21:23:47.005Z"
+  },
+  {
+    "preco": 0,
+    "_id": "69e3de47e6be8e1c1997bc83",
+    "titulo": "fdhahfsdahh",
+    "autor": "fsdhahj",
+    "ano": 2026,
+    "createdAt": "2026-04-18T19:40:55.884Z",
+    "__v": 0,
+    "updatedAt": "2026-04-18T21:23:47.005Z"
+  },
+  {
+    "preco": 0,
+    "_id": "69e3de85e6be8e1c1997bc84",
+    "titulo": "s\\gs\\g",
+    "autor": "\\ghsdgsa",
+    "ano": 2026,
+    "createdAt": "2026-04-18T19:41:57.711Z",
+    "__v": 0,
+    "updatedAt": "2026-04-18T21:23:47.005Z"
+  },
+  {
+    "_id": "69e3f20405977f592f07b75c",
+    "titulo": "fdhdh",
+    "autor": "fdheatrh",
+    "ano": 2026,
+    "preco": 0,
+    "createdAt": "2026-04-18T21:05:08.997Z",
+    "updatedAt": "2026-04-18T21:05:08.997Z",
+    "__v": 0
+  },
+  {
+    "_id": "69e3f2be05977f592f07b75e",
+    "titulo": "Giovanna",
+    "autor": "Autor Teste",
+    "ano": 2024,
+    "preco": 0,
+    "createdAt": "2026-04-18T21:08:14.866Z",
+    "updatedAt": "2026-04-18T21:08:14.866Z",
+    "__v": 0
+  },
+  {
+    "_id": "69e3f41409fbca70b9dc9fdc",
+    "titulo": "rfshaehr",
+    "autor": "erfaha",
+    "ano": 2026,
+    "preco": 0,
+    "createdAt": "2026-04-18T21:13:56.211Z",
+    "updatedAt": "2026-04-18T21:13:56.211Z",
+    "__v": 0
+  },
+  {
+    "_id": "69e3f5a409fbca70b9dc9fdd",
+    "titulo": "Teste MongoDB",
+    "autor": "Teste",
+    "ano": 2024,
+    "preco": 0,
+    "createdAt": "2026-04-18T21:20:36.756Z",
+    "updatedAt": "2026-04-18T21:20:36.756Z",
+    "__v": 0
+  }
+]

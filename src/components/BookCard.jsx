@@ -1,110 +1,68 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  BookOpen, User, Building, DollarSign, Calendar, 
-  FileText, Edit2, Trash2, Eye, Star 
-} from 'lucide-react';
+import { Book, User, Calendar, Eye, Edit2, Trash2 } from 'lucide-react';
 
 const BookCard = ({ book, onDelete }) => {
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(price || 0);
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Data não disponível';
-    return new Date(dateString).toLocaleDateString('pt-BR');
-  };
-
   return (
-    <div className="card group hover:shadow-lg transition-all duration-300 animate-fade-in">
+    <div className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
+      {/* Gradiente decorativo no topo */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+
+      {/* Conteúdo do card */}
       <div className="p-6">
-        {/* Header com ações */}
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-bold text-gray-800 group-hover:text-primary-600 transition-colors truncate">
-              {book.titulo || 'Título não informado'}
-            </h3>
-            <div className="flex items-center gap-2 mt-1">
-              <User size={14} className="text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-600 truncate">
-                {book.autor || 'Autor não informado'}
-              </span>
-            </div>
+        {/* Ícone e título */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="p-2 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+            <Book className="text-blue-600" size={24} />
           </div>
-          
-          <div className="flex gap-1 ml-2 flex-shrink-0">
-            <Link
-              to={`/livros/${book._id}`}
-              className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-              title="Visualizar"
-            >
-              <Eye size={16} />
-            </Link>
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <Link
               to={`/editar/${book._id}`}
-              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              className="p-2 text-gray-500 hover:text-blue-600 transition-colors"
               title="Editar"
             >
               <Edit2 size={16} />
             </Link>
             <button
               onClick={() => onDelete(book._id)}
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="p-2 text-gray-500 hover:text-red-600 transition-colors"
               title="Excluir"
             >
               <Trash2 size={16} />
             </button>
           </div>
         </div>
-        
-        {/* Detalhes do livro */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Building size={14} className="text-gray-400 flex-shrink-0" />
-            <span className="text-sm text-gray-600 truncate">
-              {book.editora || 'Editora não informada'}
-            </span>
+
+        {/* Informações do livro */}
+        <Link to={`/livros/${book._id}`}>
+          <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-2 hover:text-blue-600 transition-colors">
+            {book.titulo}
+          </h3>
+        </Link>
+
+        <div className="space-y-2 mt-4">
+          <div className="flex items-center gap-2 text-gray-600">
+            <User size={14} className="text-gray-400" />
+            <span className="text-sm truncate">{book.autor}</span>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <Calendar size={14} className="text-gray-400 flex-shrink-0" />
-            <span className="text-sm text-gray-600">
-              {book.anoPublicacao || 'Ano não informado'}
-            </span>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText size={14} className="text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-600">
-                {book.paginas || 0} páginas
-              </span>
+
+          {book.ano && (
+            <div className="flex items-center gap-2 text-gray-600">
+              <Calendar size={14} className="text-gray-400" />
+              <span className="text-sm">{book.ano}</span>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <DollarSign size={14} className="text-gray-400 flex-shrink-0" />
-              <span className="text-lg font-bold text-primary-600">
-                {formatPrice(book.preco)}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
-        
-        {/* Footer com informações adicionais */}
+
+        {/* Botão de detalhes */}
         <div className="mt-6 pt-4 border-t border-gray-100">
-          <div className="flex justify-between items-center">
-            <div className="text-xs text-gray-500 truncate max-w-[60%]">
-              <BookOpen size={12} className="inline mr-1" />
-              ISBN: {book.isbn || 'Não informado'}
-            </div>
-            
-            <div className="text-xs text-gray-500 text-right">
-              {book.createdAt && `Criado: ${formatDate(book.createdAt)}`}
-            </div>
-          </div>
+          <Link
+            to={`/livros/${book._id}`}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 text-sm font-medium"
+          >
+            <Eye size={16} />
+            Ver Detalhes
+          </Link>
         </div>
       </div>
     </div>
